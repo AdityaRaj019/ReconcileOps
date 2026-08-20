@@ -50,4 +50,18 @@ export interface ReconciliationResponse {
   summary: ReconciliationSummary;
   results: ReconciliationItem[];
   timestamp: string;
+  bankTransactions?: Transaction[];
+  merchantTransactions?: Transaction[];
+  message?: string;
+  error?: string;
+}
+
+export type LedgerType = 'bank' | 'merchant';
+
+export interface EditTransactionRequest {
+  action: 'ADD' | 'EDIT' | 'DELETE' | 'RECONCILE' | 'RESET_SAMPLE';
+  ledger?: LedgerType;
+  transaction?: Transaction;
+  bankTransactions?: Transaction[];
+  merchantTransactions?: Transaction[];
 }
