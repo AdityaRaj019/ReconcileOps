@@ -8,7 +8,7 @@
 
 - **Dual Ledger Input Managers:** Independent form interfaces for Bank and Merchant records (`Txn ID`, `Amount`, `Date`).
 - **Inline Transaction Editing:** Edit any transaction details directly in the table with duplicate ID collision protection.
-- **Bulk CSV / Text Importer:** Paste multi-line CSV datasets or use the built-in preset test sample.
+- **Preset Test Case Loader:** One-click button to load the prompt's standard test sample.
 - **$\mathcal{O}(N)$ Hash-Map Reconciliation Engine:** Compares ledger records in linear time without nested loops.
 - **Next.js Server API Route:** Exposes `POST /api/reconcile` returning structured JSON summaries and itemized breakdowns.
 - **Interactive KPI Cards & Visual Charts:** Real-time percentage match rates and Recharts status distribution charts.
@@ -215,8 +215,8 @@ reconcile_dashboard/
 │   ├── types/
 │   │   └── reconciliation.ts              # TypeScript Models & Interfaces
 │   ├── components/
-│   │   ├── BankForm.tsx                   # Bank Ledger Form & CSV Importer
-│   │   ├── MerchantForm.tsx               # Merchant Ledger Form & CSV Importer
+│   │   ├── BankForm.tsx                   # Bank Ledger Form
+│   │   ├── MerchantForm.tsx               # Merchant Ledger Form
 │   │   ├── Header.tsx                     # Header Navigation & Status Badges
 │   │   ├── ReconciliationSummaryCards.tsx # Summary Metric KPI Cards
 │   │   ├── ReconciliationChart.tsx        # Recharts Status Breakdown Charts

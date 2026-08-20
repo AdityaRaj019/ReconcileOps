@@ -77,14 +77,6 @@ export default function ReconcileDashboard() {
     setBankTxns((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const handleBulkBankImport = (items: Omit<Transaction, 'id'>[]) => {
-    const newItems: Transaction[] = items.map((t, idx) => ({
-      ...t,
-      id: `bank-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-    }));
-    setBankTxns((prev) => [...newItems, ...prev]);
-  };
-
   const handleAddMerchantTxn = (txn: Omit<Transaction, 'id'>) => {
     const newEntry: Transaction = {
       ...txn,
@@ -99,14 +91,6 @@ export default function ReconcileDashboard() {
 
   const handleRemoveMerchantTxn = (id: string) => {
     setMerchantTxns((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const handleBulkMerchantImport = (items: Omit<Transaction, 'id'>[]) => {
-    const newItems: Transaction[] = items.map((t, idx) => ({
-      ...t,
-      id: `merch-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-    }));
-    setMerchantTxns((prev) => [...newItems, ...prev]);
   };
 
   const handleLoadSampleData = () => {
@@ -136,7 +120,6 @@ export default function ReconcileDashboard() {
           onAddTransaction={handleAddBankTxn}
           onEditTransaction={handleEditBankTxn}
           onRemoveTransaction={handleRemoveBankTxn}
-          onBulkImport={handleBulkBankImport}
           onClearAll={() => setBankTxns([])}
         />
         <MerchantForm
@@ -144,7 +127,6 @@ export default function ReconcileDashboard() {
           onAddTransaction={handleAddMerchantTxn}
           onEditTransaction={handleEditMerchantTxn}
           onRemoveTransaction={handleRemoveMerchantTxn}
-          onBulkImport={handleBulkMerchantImport}
           onClearAll={() => setMerchantTxns([])}
         />
       </div>

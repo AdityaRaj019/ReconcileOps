@@ -2,14 +2,13 @@
 
 import React, { useState } from 'react';
 import { Transaction } from '@/types/reconciliation';
-import { Building2, Plus, Trash2, FileText, AlertCircle, Edit2, Check, X } from 'lucide-react';
+import { Building2, Plus, Trash2, AlertCircle, Edit2, Check, X } from 'lucide-react';
 
 interface BankFormProps {
   transactions: Transaction[];
   onAddTransaction: (txn: Omit<Transaction, 'id'>) => void;
   onEditTransaction: (txn: Transaction) => void;
   onRemoveTransaction: (id: string) => void;
-  onBulkImport: (txns: Omit<Transaction, 'id'>[]) => void;
   onClearAll: () => void;
 }
 
@@ -18,14 +17,11 @@ export default function BankForm({
   onAddTransaction,
   onEditTransaction,
   onRemoveTransaction,
-  onBulkImport,
   onClearAll,
 }: BankFormProps) {
   const [txnId, setTxnId] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('2026-06-01');
-  const [showBulkInput, setShowBulkInput] = useState(false);
-  const [bulkText, setBulkText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   // Editing state
@@ -116,38 +112,6 @@ export default function BankForm({
     setEditingId(null);
   };
 
-  const handleBulkParse = () => {
-    setErrorMsg('');
-    if (!bulkText.trim()) return;
-
-    const lines = bulkText.split('\n');
-    const parsed: Omit<Transaction, 'id'>[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line || line.toLowerCase().startsWith('txn') || line.toLowerCase().startsWith('id')) {
-        continue;
-      }
-      const parts = line.split(/[\t,]+/).map((p) => p.trim());
-      if (parts.length >= 3) {
-        const idVal = parts[0].toUpperCase();
-        const amtVal = parseFloat(parts[1].replace('$', ''));
-        const dateVal = parts[2];
-        if (idVal && !isNaN(amtVal) && dateVal) {
-          parsed.push({ txnId: idVal, amount: amtVal, date: dateVal });
-        }
-      }
-    }
-
-    if (parsed.length > 0) {
-      onBulkImport(parsed);
-      setBulkText('');
-      setShowBulkInput(false);
-    } else {
-      setErrorMsg('Could not parse bulk input. Expected format: TxnID, Amount, Date (e.g. T101, 1000, 2026-06-01)');
-    }
-  };
-
   return (
     <div className="form-card bank-theme">
       <div className="form-header">
@@ -162,15 +126,6 @@ export default function BankForm({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowBulkInput(!showBulkInput)}
-            className="btn-xs-secondary"
-            title="Bulk CSV / Text Paste"
-          >
-            <FileText size={13} />
-            <span>{showBulkInput ? 'Single Form' : 'Bulk Paste'}</span>
-          </button>
           {transactions.length > 0 && (
             <button
               type="button"
@@ -191,78 +146,47 @@ export default function BankForm({
         </div>
       )}
 
-      {showBulkInput ? (
-        <div className="space-y-3 my-3">
-          <label className="block text-xs font-mono text-slate-300">
-            Paste CSV / Tab-separated lines (Txn ID, Amount, Date):
-          </label>
-          <textarea
-            value={bulkText}
-            onChange={(e) => setBulkText(e.target.value)}
-            placeholder={`T101, 1000, 2026-06-01\nT102, 2000, 2026-06-01\nT103, 500, 2026-06-01\nT105, 800, 2026-06-01`}
-            rows={4}
-            className="form-textarea"
+      <form onSubmit={handleSubmit} className="form-grid my-3">
+        <div className="input-group">
+          <label className="input-label">Txn ID</label>
+          <input
+            type="text"
+            value={txnId}
+            onChange={(e) => setTxnId(e.target.value)}
+            placeholder="e.g. T101"
+            className="form-input font-mono uppercase"
           />
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setShowBulkInput(false)}
-              className="btn-secondary text-xs py-1.5"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleBulkParse}
-              className="btn-primary text-xs py-1.5"
-            >
-              Import Records
-            </button>
-          </div>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="form-grid my-3">
-          <div className="input-group">
-            <label className="input-label">Txn ID</label>
-            <input
-              type="text"
-              value={txnId}
-              onChange={(e) => setTxnId(e.target.value)}
-              placeholder="e.g. T101"
-              className="form-input font-mono uppercase"
-            />
-          </div>
 
-          <div className="input-group">
-            <label className="input-label">Amount ($)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="e.g. 1000"
-              className="form-input font-mono"
-            />
-          </div>
+        <div className="input-group">
+          <label className="input-label">Amount ($)</label>
+          <input
+            type="number"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="e.g. 1000"
+            className="form-input font-mono"
+          />
+        </div>
 
-          <div className="input-group">
-            <label className="input-label">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="form-input font-mono"
-            />
-          </div>
+        <div className="input-group">
+          <label className="input-label">Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="form-input font-mono"
+          />
+        </div>
 
-          <div className="input-group justify-end">
-            <button type="submit" className="btn-bank-add">
-              <Plus size={16} />
-              <span>Add Bank Entry</span>
-            </button>
-          </div>
-        </form>
-      )}
+        <div className="input-group justify-end">
+          <button type="submit" className="btn-bank-add">
+            <Plus size={16} />
+            <span>Add Bank Entry</span>
+          </button>
+        </div>
+      </form>
 
       {/* Transaction List with Edit Support */}
       <div className="transactions-list-container">
