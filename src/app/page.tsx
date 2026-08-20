@@ -8,7 +8,6 @@ import Header from '@/components/Header';
 import BankForm from '@/components/BankForm';
 import MerchantForm from '@/components/MerchantForm';
 import ReconciliationSummaryCards from '@/components/ReconciliationSummaryCards';
-import ReconciliationChart from '@/components/ReconciliationChart';
 import ReconciliationTable from '@/components/ReconciliationTable';
 import { Play, RotateCcw, HardDriveDownload } from 'lucide-react';
 
@@ -165,9 +164,6 @@ export default function ReconcileDashboard() {
             activeFilter={activeFilter}
             onSelectFilter={setActiveFilter}
           />
-
-          {/* Visual Breakdown Charts */}
-          <ReconciliationChart summary={reconciliationResult.summary} />
 
           {/* Itemized Filterable Results Table */}
           <ReconciliationTable

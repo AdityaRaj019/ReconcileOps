@@ -11,10 +11,9 @@
 - **Preset Test Case Loader:** One-click button to load the prompt's standard test sample.
 - **$\mathcal{O}(N)$ Hash-Map Reconciliation Engine:** Compares ledger records in linear time without nested loops.
 - **Next.js Server API Route:** Exposes `POST /api/reconcile` returning structured JSON summaries and itemized breakdowns.
-- **Interactive KPI Cards & Visual Charts:** Real-time percentage match rates and Recharts status distribution charts.
+- **Interactive KPI Cards:** Real-time percentage match rates and status summary metric cards.
 - **Interactive Search & Category Filters:** Filter by classification (`Matched`, `Amount Mismatch`, `Date Mismatch`, `Only in Bank`, `Only in Merchant`) or search by `Txn ID`.
 - **Export Reports:** One-click CSV report export and raw JSON payload downloads.
-- **10 Million Records System Design:** In-app architecture modal detailing streaming, chunking, DuckDB, and Spark scaling strategies.
 
 ---
 
@@ -175,29 +174,6 @@ Where $N = N_{\text{bank}} + N_{\text{merchant}}$:
 
 ---
 
-## 💬 Verbal Follow-up: Scaling to 10 Million Records
-
-If both systems contain **10 million records** (~1 GB per CSV file), holding all objects in standard V8 JavaScript heap memory can trigger memory crashes (`FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed`). The architecture adapts using the following strategies:
-
-### 1. File Streaming & Chunking (Node.js `readline` / Streams)
-- Stream File A line-by-line into an in-memory HashMap (10M keys $\approx 400\text{ MB}$ RAM).
-- Stream File B record-by-record, perform $\mathcal{O}(1)$ map lookups, and pipe mismatch results directly to an output stream file.
-- **Memory footprint:** Fixed $\approx 400\text{ MB}$ RAM regardless of output file size.
-
-### 2. Embedded Key-Value Database (RocksDB / Redis Pipeline)
-- For memory-constrained containers (< 256MB RAM), ingest Bank records into **RocksDB** (disk-backed key-value store).
-- Perform lookups on demand during Merchant record streaming.
-
-### 3. Vectorized SQL Engine (DuckDB / PostgreSQL `FULL OUTER JOIN`)
-- Load datasets into **DuckDB** or PostgreSQL with an index on `txn_id`.
-- Execute vectorized SQL join query.
-
-### 4. Distributed Processing (Apache Spark / Ray Cluster)
-- Partition records across worker nodes by `hash(txn_id) % N_workers`.
-- Execute parallel local hash joins for enterprise datasets containing 100M+ to Billions of transactions.
-
----
-
 ## 🛠️ File Structure
 
 ```
@@ -217,12 +193,9 @@ reconcile_dashboard/
 │   ├── components/
 │   │   ├── BankForm.tsx                   # Bank Ledger Form
 │   │   ├── MerchantForm.tsx               # Merchant Ledger Form
-│   │   ├── Header.tsx                     # Header Navigation & Status Badges
+│   │   ├── Header.tsx                     # Header Navigation
 │   │   ├── ReconciliationSummaryCards.tsx # Summary Metric KPI Cards
-│   │   ├── ReconciliationChart.tsx        # Recharts Status Breakdown Charts
-│   │   ├── ReconciliationTable.tsx        # Filterable Results Table & Exporters
-│   │   ├── TenMillionScaleModal.tsx       # 10M Records Scaling Architecture Breakdown
-│   │   └── FileStructureModal.tsx         # Next.js Architecture & File Viewer
+│   │   └── ReconciliationTable.tsx        # Filterable Results Table & Exporters
 │   └── utils/
 │       └── sampleData.ts                  # Prompt Sample Test Cases (T101-T105)
 ├── package.json
