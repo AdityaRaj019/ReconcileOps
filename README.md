@@ -1,36 +1,252 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚡ ReconcileOps — High-Performance Transaction Reconciliation Engine & Dashboard
 
-## Getting Started
+**ReconcileOps** is a full-stack transaction reconciliation application built with **Next.js (App Router)** and **TypeScript**. It classifies records from Bank and Merchant systems in single-pass linear time $\mathcal{O}(N)$ using hash-map indexing with **zero nested loops**.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Key Features
+
+- **Dual Ledger Input Managers:** Independent form interfaces for Bank and Merchant records (`Txn ID`, `Amount`, `Date`).
+- **Bulk CSV / Text Importer:** Paste multi-line CSV datasets or use the built-in preset test sample.
+- **$\mathcal{O}(N)$ Hash-Map Reconciliation Engine:** Compares ledger records in linear time without nested loops.
+- **Next.js Server API Route:** Exposes `POST /api/reconcile` returning structured JSON summaries and itemized breakdowns.
+- **Interactive KPI Cards & Visual Charts:** Real-time percentage match rates and Recharts status distribution charts.
+- **Interactive Search & Category Filters:** Filter by classification (`Matched`, `Amount Mismatch`, `Date Mismatch`, `Only in Bank`, `Only in Merchant`) or search by `Txn ID`.
+- **Export Reports:** One-click CSV report export and raw JSON payload downloads.
+- **10 Million Records System Design:** In-app architecture modal detailing streaming, chunking, DuckDB, and Spark scaling strategies.
+
+---
+
+## 📊 Status Classifications
+
+| Status Category | Description | Condition |
+| :--- | :--- | :--- |
+| **`MATCHED`** | Perfect Match | Txn ID present in both; Amount and Date match exactly |
+| **`AMOUNT_MISMATCH`** | Discrepancy in Amount | Txn ID present in both; Date matches, but Amount differs |
+| **`DATE_MISMATCH`** | Discrepancy in Date | Txn ID present in both; Amount matches, but Date differs |
+| **`AMOUNT_AND_DATE_MISMATCH`** | Discrepancy in Both | Txn ID present in both; Both Amount and Date differ |
+| **`ONLY_IN_BANK`** | Missing in Merchant | Txn ID present in Bank system, missing in Merchant ledger |
+| **`ONLY_IN_MERCHANT`** | Missing in Bank | Txn ID present in Merchant system, missing in Bank ledger |
+
+---
+
+## 🧪 Sample Test Dataset & Verification
+
+### Input Data
+
+#### Bank Transactions
+| Txn ID | Amount ($) | Date |
+| :--- | :--- | :--- |
+| **T101** | 1000.00 | 2026-06-01 |
+| **T102** | 2000.00 | 2026-06-01 |
+| **T103** | 500.00 | 2026-06-01 |
+| **T105** | 800.00 | 2026-06-01 |
+
+#### Merchant Transactions
+| Txn ID | Amount ($) | Date |
+| :--- | :--- | :--- |
+| **T101** | 1000.00 | 2026-06-01 |
+| **T102** | 2500.00 | 2026-06-01 |
+| **T104** | 300.00 | 2026-06-01 |
+| **T105** | 800.00 | 2026-06-02 |
+
+### Engine Output (`POST /api/reconcile`)
+
+```json
+{
+  "success": true,
+  "summary": {
+    "totalBankRecords": 4,
+    "totalMerchantRecords": 4,
+    "totalUniqueTxnIds": 5,
+    "matchedCount": 1,
+    "amountMismatchCount": 1,
+    "dateMismatchCount": 1,
+    "bothMismatchCount": 0,
+    "onlyInBankCount": 1,
+    "onlyInMerchantCount": 1,
+    "matchPercentage": 20.0,
+    "executionTimeMs": 0.119,
+    "algorithmComplexity": "O(N) HashMap Single-Pass"
+  },
+  "results": [
+    {
+      "txnId": "T101",
+      "status": "MATCHED",
+      "statusLabel": "Matched",
+      "bankTransaction": { "amount": 1000, "date": "2026-06-01" },
+      "merchantTransaction": { "amount": 1000, "date": "2026-06-01" },
+      "amountDiff": 0,
+      "dateDiff": "2026-06-01 → 2026-06-01",
+      "notes": "Exact match in amount and date."
+    },
+    {
+      "txnId": "T102",
+      "status": "AMOUNT_MISMATCH",
+      "statusLabel": "Amount Mismatch",
+      "bankTransaction": { "amount": 2000, "date": "2026-06-01" },
+      "merchantTransaction": { "amount": 2500, "date": "2026-06-01" },
+      "amountDiff": 500,
+      "dateDiff": "2026-06-01 → 2026-06-01",
+      "notes": "Bank: $2000.00, Merchant: $2500.00 (Diff: +$500.00)"
+    },
+    {
+      "txnId": "T104",
+      "status": "ONLY_IN_MERCHANT",
+      "statusLabel": "Present only in Merchant",
+      "merchantTransaction": { "amount": 300, "date": "2026-06-01" },
+      "notes": "Transaction missing in Bank ledger. Merchant amount: $300.00"
+    },
+    {
+      "txnId": "T105",
+      "status": "DATE_MISMATCH",
+      "statusLabel": "Date Mismatch",
+      "bankTransaction": { "amount": 800, "date": "2026-06-01" },
+      "merchantTransaction": { "amount": 800, "date": "2026-06-02" },
+      "amountDiff": 0,
+      "dateDiff": "2026-06-01 → 2026-06-02",
+      "notes": "Bank date: 2026-06-01, Merchant date: 2026-06-02"
+    },
+    {
+      "txnId": "T103",
+      "status": "ONLY_IN_BANK",
+      "statusLabel": "Present only in Bank",
+      "bankTransaction": { "amount": 500, "date": "2026-06-01" },
+      "notes": "Transaction missing in Merchant ledger. Bank amount: $500.00"
+    }
+  ]
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚡ Algorithm & Complexity Analysis
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Time Complexity: $\mathcal{O}(N)$
 
-## Learn More
+Where $N = N_{\text{bank}} + N_{\text{merchant}}$:
 
-To learn more about Next.js, take a look at the following resources:
+1. **Bank Map Construction:** $\mathcal{O}(N_{\text{bank}})$ to insert Bank records into a `Map<txnId, Transaction>`.
+2. **Merchant Scan & Lookups:** $\mathcal{O}(N_{\text{merchant}})$ pass over Merchant array, with $\mathcal{O}(1)$ average hash-map lookups.
+3. **Unprocessed Bank Pass:** $\mathcal{O}(N_{\text{bank}})$ pass over Bank map keys to collect entries present only in Bank.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Total Time Complexity:** $\mathcal{O}(N_{\text{bank}} + N_{\text{merchant}}) = \mathcal{O}(N)$ — Linear Time, No Nested Loops.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Space Complexity: $\mathcal{O}(N)$
 
-## Deploy on Vercel
+- Hash-map stores up to $N_{\text{bank}}$ entries.
+- Set tracks up to $N_{\text{merchant}}$ processed transaction IDs.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 💬 Verbal Follow-up: Scaling to 10 Million Records
+
+If both systems contain **10 million records** (~1 GB per CSV file), holding all objects in standard V8 JavaScript heap memory can trigger memory crashes (`FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed`). The architecture adapts using the following strategies:
+
+### 1. File Streaming & Chunking (Node.js `readline` / Streams)
+- Stream File A line-by-line into an in-memory HashMap (10M keys $\approx 400\text{ MB}$ RAM).
+- Stream File B record-by-record, perform $\mathcal{O}(1)$ map lookups, and pipe mismatch results directly to an output stream file.
+- **Memory footprint:** Fixed $\approx 400\text{ MB}$ RAM regardless of output file size.
+
+### 2. Embedded Key-Value Database (RocksDB / Redis Pipeline)
+- For memory-constrained containers (< 256MB RAM), ingest Bank records into **RocksDB** (disk-backed key-value store).
+- Perform lookups on demand during Merchant record streaming.
+
+### 3. Vectorized SQL Engine (DuckDB / PostgreSQL `FULL OUTER JOIN`)
+- Load datasets into **DuckDB** or PostgreSQL with an index on `txn_id`.
+- Execute a single vectorized SQL query:
+```sql
+SELECT 
+  COALESCE(b.txn_id, m.txn_id) AS txn_id,
+  CASE
+    WHEN b.txn_id IS NULL THEN 'ONLY_IN_MERCHANT'
+    WHEN m.txn_id IS NULL THEN 'ONLY_IN_BANK'
+    WHEN b.amount = m.amount AND b.date = m.date THEN 'MATCHED'
+    WHEN b.amount != m.amount AND b.date = m.date THEN 'AMOUNT_MISMATCH'
+    WHEN b.amount = m.amount AND b.date != m.date THEN 'DATE_MISMATCH'
+    ELSE 'AMOUNT_AND_DATE_MISMATCH'
+  END AS status
+FROM bank_txns b 
+FULL OUTER JOIN merchant_txns m ON b.txn_id = m.txn_id;
+```
+
+### 4. Distributed Processing (Apache Spark / Ray Cluster)
+- Partition records across worker nodes by `hash(txn_id) % N_workers`.
+- Execute parallel local hash joins for enterprise datasets containing 100M+ to Billions of transactions.
+
+---
+
+## 🛠️ File Structure
+
+```
+reconcile_dashboard/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── reconcile/
+│   │   │       └── route.ts               # Backend REST API for O(N) Reconciliation
+│   │   ├── globals.css                    # Design system styling & custom UI tokens
+│   │   ├── layout.tsx                     # Root Layout & Metadata
+│   │   └── page.tsx                       # Dashboard Main Page
+│   ├── lib/
+│   │   └── reconciliationEngine.ts        # O(N) HashMap Reconciliation Core Algorithm
+│   ├── types/
+│   │   └── reconciliation.ts              # TypeScript Models & Interfaces
+│   ├── components/
+│   │   ├── BankForm.tsx                   # Bank Ledger Form & CSV Importer
+│   │   ├── MerchantForm.tsx               # Merchant Ledger Form & CSV Importer
+│   │   ├── Header.tsx                     # Header Navigation & Status Badges
+│   │   ├── ReconciliationSummaryCards.tsx # Summary Metric KPI Cards
+│   │   ├── ReconciliationChart.tsx        # Recharts Status Breakdown Charts
+│   │   ├── ReconciliationTable.tsx        # Filterable Results Table & Exporters
+│   │   ├── TenMillionScaleModal.tsx       # 10M Records Scaling Architecture Breakdown
+│   │   └── FileStructureModal.tsx         # Next.js Architecture & File Viewer
+│   └── utils/
+│       └── sampleData.ts                  # Prompt Sample Test Cases (T101-T105)
+├── package.json
+├── tsconfig.json
+└── next.config.ts
+```
+
+---
+
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- Node.js 18+ 
+- npm / yarn / pnpm
+
+### Installation & Running Locally
+
+```bash
+# Install dependencies
+npm install
+
+# Start local Next.js development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser to access the dashboard.
+
+### API Endpoint Usage
+
+```bash
+curl -X POST http://localhost:3000/api/reconcile \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bankTransactions": [
+      { "txnId": "T101", "amount": 1000, "date": "2026-06-01" },
+      { "txnId": "T102", "amount": 2000, "date": "2026-06-01" }
+    ],
+    "merchantTransactions": [
+      { "txnId": "T101", "amount": 1000, "date": "2026-06-01" },
+      { "txnId": "T102", "amount": 2500, "date": "2026-06-01" }
+    ]
+  }'
+```
+
+---
+
+## 📝 License
+
+Distributed under the MIT License.
