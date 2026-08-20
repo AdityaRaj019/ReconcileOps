@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Transaction, ReconciliationResponse } from '@/types/reconciliation';
 import { INITIAL_BANK_TRANSACTIONS, INITIAL_MERCHANT_TRANSACTIONS } from '@/utils/sampleData';
 import { runReconciliationEngine } from '@/lib/reconciliationEngine';
@@ -24,11 +24,7 @@ export default function ReconcileDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [useBackendApi, setUseBackendApi] = useState(true);
 
-  // Auto-run reconciliation engine on initial mount or dataset changes
-  useEffect(() => {
-    handleRunReconciliation();
-  }, [bankTxns, merchantTxns]);
-
+  // Reconciliation ONLY runs when the user explicitly clicks the "Run O(N) Reconciliation" button
   const handleRunReconciliation = async () => {
     setIsLoading(true);
     try {
@@ -47,8 +43,6 @@ export default function ReconcileDashboard() {
         if (res.ok) {
           const data: ReconciliationResponse = await res.json();
           setReconciliationResult(data);
-          if (data.bankTransactions) setBankTxns(data.bankTransactions);
-          if (data.merchantTransactions) setMerchantTxns(data.merchantTransactions);
         } else {
           // Fallback to client-side engine if API route is unreachable
           const clientData = runReconciliationEngine(bankTxns, merchantTxns);
@@ -67,67 +61,20 @@ export default function ReconcileDashboard() {
     }
   };
 
-  const handleAddBankTxn = async (txn: Omit<Transaction, 'id'>) => {
+  const handleAddBankTxn = (txn: Omit<Transaction, 'id'>) => {
     const newEntry: Transaction = {
       ...txn,
       id: `bank-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     };
-
-    const updated = [newEntry, ...bankTxns];
-    setBankTxns(updated);
-
-    if (useBackendApi) {
-      await fetch('/api/reconcile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'ADD',
-          ledger: 'bank',
-          transaction: newEntry,
-          bankTransactions: updated,
-          merchantTransactions: merchantTxns,
-        }),
-      });
-    }
+    setBankTxns((prev) => [newEntry, ...prev]);
   };
 
-  const handleEditBankTxn = async (txn: Transaction) => {
-    const updated = bankTxns.map((t) => (t.id === txn.id ? txn : t));
-    setBankTxns(updated);
-
-    if (useBackendApi) {
-      await fetch('/api/reconcile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'EDIT',
-          ledger: 'bank',
-          transaction: txn,
-          bankTransactions: updated,
-          merchantTransactions: merchantTxns,
-        }),
-      });
-    }
+  const handleEditBankTxn = (txn: Transaction) => {
+    setBankTxns((prev) => prev.map((t) => (t.id === txn.id ? txn : t)));
   };
 
-  const handleRemoveBankTxn = async (id: string) => {
-    const targetTxn = bankTxns.find((t) => t.id === id);
-    const updated = bankTxns.filter((t) => t.id !== id);
-    setBankTxns(updated);
-
-    if (useBackendApi && targetTxn) {
-      await fetch('/api/reconcile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'DELETE',
-          ledger: 'bank',
-          transaction: targetTxn,
-          bankTransactions: updated,
-          merchantTransactions: merchantTxns,
-        }),
-      });
-    }
+  const handleRemoveBankTxn = (id: string) => {
+    setBankTxns((prev) => prev.filter((t) => t.id !== id));
   };
 
   const handleBulkBankImport = (items: Omit<Transaction, 'id'>[]) => {
@@ -138,67 +85,20 @@ export default function ReconcileDashboard() {
     setBankTxns((prev) => [...newItems, ...prev]);
   };
 
-  const handleAddMerchantTxn = async (txn: Omit<Transaction, 'id'>) => {
+  const handleAddMerchantTxn = (txn: Omit<Transaction, 'id'>) => {
     const newEntry: Transaction = {
       ...txn,
       id: `merch-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     };
-
-    const updated = [newEntry, ...merchantTxns];
-    setMerchantTxns(updated);
-
-    if (useBackendApi) {
-      await fetch('/api/reconcile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'ADD',
-          ledger: 'merchant',
-          transaction: newEntry,
-          bankTransactions: bankTxns,
-          merchantTransactions: updated,
-        }),
-      });
-    }
+    setMerchantTxns((prev) => [newEntry, ...prev]);
   };
 
-  const handleEditMerchantTxn = async (txn: Transaction) => {
-    const updated = merchantTxns.map((t) => (t.id === txn.id ? txn : t));
-    setMerchantTxns(updated);
-
-    if (useBackendApi) {
-      await fetch('/api/reconcile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'EDIT',
-          ledger: 'merchant',
-          transaction: txn,
-          bankTransactions: bankTxns,
-          merchantTransactions: updated,
-        }),
-      });
-    }
+  const handleEditMerchantTxn = (txn: Transaction) => {
+    setMerchantTxns((prev) => prev.map((t) => (t.id === txn.id ? txn : t)));
   };
 
-  const handleRemoveMerchantTxn = async (id: string) => {
-    const targetTxn = merchantTxns.find((t) => t.id === id);
-    const updated = merchantTxns.filter((t) => t.id !== id);
-    setMerchantTxns(updated);
-
-    if (useBackendApi && targetTxn) {
-      await fetch('/api/reconcile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'DELETE',
-          ledger: 'merchant',
-          transaction: targetTxn,
-          bankTransactions: bankTxns,
-          merchantTransactions: updated,
-        }),
-      });
-    }
+  const handleRemoveMerchantTxn = (id: string) => {
+    setMerchantTxns((prev) => prev.filter((t) => t.id !== id));
   };
 
   const handleBulkMerchantImport = (items: Omit<Transaction, 'id'>[]) => {
@@ -209,19 +109,9 @@ export default function ReconcileDashboard() {
     setMerchantTxns((prev) => [...newItems, ...prev]);
   };
 
-  const handleLoadSampleData = async () => {
+  const handleLoadSampleData = () => {
     setBankTxns(INITIAL_BANK_TRANSACTIONS);
     setMerchantTxns(INITIAL_MERCHANT_TRANSACTIONS);
-
-    if (useBackendApi) {
-      await fetch('/api/reconcile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'RESET_SAMPLE',
-        }),
-      });
-    }
   };
 
   const handleResetAll = () => {
