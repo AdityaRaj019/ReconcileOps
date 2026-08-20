@@ -9,7 +9,7 @@ import BankForm from '@/components/BankForm';
 import MerchantForm from '@/components/MerchantForm';
 import ReconciliationSummaryCards from '@/components/ReconciliationSummaryCards';
 import ReconciliationTable from '@/components/ReconciliationTable';
-import { Play, RotateCcw, HardDriveDownload } from 'lucide-react';
+import { Play, RotateCcw } from 'lucide-react';
 
 export default function ReconcileDashboard() {
   const [bankTxns, setBankTxns] = useState<Transaction[]>(INITIAL_BANK_TRANSACTIONS);
@@ -81,11 +81,6 @@ export default function ReconcileDashboard() {
     setMerchantTxns((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const handleLoadSampleData = () => {
-    setBankTxns(INITIAL_BANK_TRANSACTIONS);
-    setMerchantTxns(INITIAL_MERCHANT_TRANSACTIONS);
-  };
-
   const handleResetAll = () => {
     setBankTxns([]);
     setMerchantTxns([]);
@@ -116,20 +111,10 @@ export default function ReconcileDashboard() {
 
       {/* Reconciliation Engine Control Bar */}
       <div className="reconcile-action-bar">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleLoadSampleData}
-            className="btn-secondary text-xs flex items-center gap-1.5"
-            title="Load sample test cases"
-          >
-            <HardDriveDownload size={14} />
-            <span>Load Sample</span>
-          </button>
-          <button onClick={handleResetAll} className="btn-secondary text-xs flex items-center gap-1.5">
-            <RotateCcw size={14} />
-            <span>Reset</span>
-          </button>
-        </div>
+        <button onClick={handleResetAll} className="btn-secondary text-xs flex items-center gap-1.5">
+          <RotateCcw size={14} />
+          <span>Reset</span>
+        </button>
 
         <button onClick={handleRunReconciliation} disabled={isLoading} className="reconcile-btn-large">
           <Play size={16} />
