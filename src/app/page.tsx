@@ -12,7 +12,7 @@ import ReconciliationChart from '@/components/ReconciliationChart';
 import ReconciliationTable from '@/components/ReconciliationTable';
 import TenMillionScaleModal from '@/components/TenMillionScaleModal';
 import FileStructureModal from '@/components/FileStructureModal';
-import { Play, RotateCcw, Sparkles } from 'lucide-react';
+import { Play, RotateCcw, Sparkles, HardDriveDownload, FolderTree, Database, Cpu } from 'lucide-react';
 
 export default function ReconcileDashboard() {
   const [bankTxns, setBankTxns] = useState<Transaction[]>(INITIAL_BANK_TRANSACTIONS);
@@ -106,12 +106,47 @@ export default function ReconcileDashboard() {
 
   return (
     <div className="app-container">
-      <Header
-        onLoadSample={handleLoadSampleData}
-        onOpenScaleModal={() => setIsScaleModalOpen(true)}
-        onOpenFileStructureModal={() => setIsFileStructModalOpen(true)}
-        executionTimeMs={reconciliationResult?.summary.executionTimeMs}
-      />
+      <Header />
+
+      {/* Toolbar / Actions Subheader */}
+      <div className="sub-toolbar-bar">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleLoadSampleData}
+            className="btn-secondary font-mono text-xs flex items-center gap-1.5"
+            title="Load sample test cases (T101, T102, T103, T104, T105)"
+          >
+            <HardDriveDownload size={14} />
+            <span>Load Sample Data</span>
+          </button>
+
+          <button
+            onClick={() => setIsFileStructModalOpen(true)}
+            className="btn-secondary font-mono text-xs flex items-center gap-1.5"
+            title="View Project Architecture & File Structure"
+          >
+            <FolderTree size={14} />
+            <span>Architecture & Files</span>
+          </button>
+
+          <button
+            onClick={() => setIsScaleModalOpen(true)}
+            className="btn-glow text-xs flex items-center gap-1.5"
+            title="Verbal Follow-up Solution for 10M Records"
+          >
+            <Database size={14} />
+            <span>10M Records Strategy</span>
+          </button>
+        </div>
+
+        {reconciliationResult?.summary.executionTimeMs !== undefined && (
+          <div className="performance-badge">
+            <Cpu size={14} />
+            <span>Engine Speed: {reconciliationResult.summary.executionTimeMs}ms</span>
+            <span className="complexity-tag">O(N) HashMap</span>
+          </div>
+        )}
+      </div>
 
       {/* Dual Input Form Section */}
       <div className="forms-grid">
