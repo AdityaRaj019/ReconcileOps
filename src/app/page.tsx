@@ -10,21 +10,17 @@ import MerchantForm from '@/components/MerchantForm';
 import ReconciliationSummaryCards from '@/components/ReconciliationSummaryCards';
 import ReconciliationChart from '@/components/ReconciliationChart';
 import ReconciliationTable from '@/components/ReconciliationTable';
-import TenMillionScaleModal from '@/components/TenMillionScaleModal';
-import FileStructureModal from '@/components/FileStructureModal';
-import { Play, RotateCcw, Sparkles, HardDriveDownload, FolderTree, Database, Cpu } from 'lucide-react';
+import { Play, RotateCcw, HardDriveDownload } from 'lucide-react';
 
 export default function ReconcileDashboard() {
   const [bankTxns, setBankTxns] = useState<Transaction[]>(INITIAL_BANK_TRANSACTIONS);
   const [merchantTxns, setMerchantTxns] = useState<Transaction[]>(INITIAL_MERCHANT_TRANSACTIONS);
   const [reconciliationResult, setReconciliationResult] = useState<ReconciliationResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('ALL');
-  const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
-  const [isFileStructModalOpen, setIsFileStructModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [useBackendApi, setUseBackendApi] = useState(true);
 
-  // Reconciliation ONLY runs when the user explicitly clicks the "Run O(N) Reconciliation" button
+  // Reconciliation ONLY runs when the user explicitly clicks the "Run Reconciliation" button
   const handleRunReconciliation = async () => {
     setIsLoading(true);
     try {
@@ -44,7 +40,6 @@ export default function ReconcileDashboard() {
           const data: ReconciliationResponse = await res.json();
           setReconciliationResult(data);
         } else {
-          // Fallback to client-side engine if API route is unreachable
           const clientData = runReconciliationEngine(bankTxns, merchantTxns);
           setReconciliationResult(clientData);
         }
@@ -53,7 +48,7 @@ export default function ReconcileDashboard() {
         setReconciliationResult(clientData);
       }
     } catch (err) {
-      console.warn('Backend API request fallback to client-side execution:', err);
+      console.warn('Backend API fallback:', err);
       const clientData = runReconciliationEngine(bankTxns, merchantTxns);
       setReconciliationResult(clientData);
     } finally {
@@ -108,46 +103,6 @@ export default function ReconcileDashboard() {
     <div className="app-container">
       <Header />
 
-      {/* Toolbar / Actions Subheader */}
-      <div className="sub-toolbar-bar">
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={handleLoadSampleData}
-            className="btn-secondary font-mono text-xs flex items-center gap-1.5"
-            title="Load sample test cases (T101, T102, T103, T104, T105)"
-          >
-            <HardDriveDownload size={14} />
-            <span>Load Sample Data</span>
-          </button>
-
-          <button
-            onClick={() => setIsFileStructModalOpen(true)}
-            className="btn-secondary font-mono text-xs flex items-center gap-1.5"
-            title="View Project Architecture & File Structure"
-          >
-            <FolderTree size={14} />
-            <span>Architecture & Files</span>
-          </button>
-
-          <button
-            onClick={() => setIsScaleModalOpen(true)}
-            className="btn-glow text-xs flex items-center gap-1.5"
-            title="Verbal Follow-up Solution for 10M Records"
-          >
-            <Database size={14} />
-            <span>10M Records Strategy</span>
-          </button>
-        </div>
-
-        {reconciliationResult?.summary.executionTimeMs !== undefined && (
-          <div className="performance-badge">
-            <Cpu size={14} />
-            <span>Engine Speed: {reconciliationResult.summary.executionTimeMs}ms</span>
-            <span className="complexity-tag">O(N) HashMap</span>
-          </div>
-        )}
-      </div>
-
       {/* Dual Input Form Section */}
       <div className="forms-grid">
         <BankForm
@@ -166,17 +121,21 @@ export default function ReconcileDashboard() {
         />
       </div>
 
-      {/* Reconciliation Engine Bar */}
+      {/* Reconciliation Engine Control Bar */}
       <div className="reconcile-action-bar">
-        <div className="action-title-area">
-          <Sparkles className="text-amber-400" size={24} />
-          <div>
-            <h3 className="font-bold text-slate-100 text-sm">Engine Execution Control</h3>
-            <p className="text-xs text-slate-400 font-mono">
-              Status: <span className="text-emerald-400 font-semibold">O(N) HashMap Engine Ready</span> | Mode:{' '}
-              {useBackendApi ? 'Backend Next.js API (/api/reconcile)' : 'In-Memory Client'}
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleLoadSampleData}
+            className="btn-secondary text-xs flex items-center gap-1.5"
+            title="Load sample test cases"
+          >
+            <HardDriveDownload size={14} />
+            <span>Load Sample</span>
+          </button>
+          <button onClick={handleResetAll} className="btn-secondary text-xs flex items-center gap-1.5">
+            <RotateCcw size={14} />
+            <span>Reset</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -187,17 +146,12 @@ export default function ReconcileDashboard() {
               onChange={(e) => setUseBackendApi(e.target.checked)}
               className="accent-cyan-400"
             />
-            <span>Use Backend REST API</span>
+            <span>Use Backend API</span>
           </label>
 
-          <button onClick={handleResetAll} className="btn-secondary text-xs py-2 flex items-center gap-1.5">
-            <RotateCcw size={14} />
-            <span>Reset All</span>
-          </button>
-
           <button onClick={handleRunReconciliation} disabled={isLoading} className="reconcile-btn-large">
-            <Play size={18} />
-            <span>{isLoading ? 'Running Engine...' : 'Run O(N) Reconciliation'}</span>
+            <Play size={16} />
+            <span>{isLoading ? 'Running...' : 'Run Reconciliation'}</span>
           </button>
         </div>
       </div>
@@ -223,10 +177,6 @@ export default function ReconcileDashboard() {
           />
         </section>
       )}
-
-      {/* Modals */}
-      <TenMillionScaleModal isOpen={isScaleModalOpen} onClose={() => setIsScaleModalOpen(false)} />
-      <FileStructureModal isOpen={isFileStructModalOpen} onClose={() => setIsFileStructModalOpen(false)} />
     </div>
   );
 }

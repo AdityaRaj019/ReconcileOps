@@ -83,7 +83,6 @@ export default function BankForm({
     }
     const formattedTxnId = editTxnId.trim().toUpperCase();
 
-    // Check if new ID collides with ANOTHER record in bank list
     const isDuplicate = transactions.some(
       (t) => t.id !== id && t.txnId.toUpperCase() === formattedTxnId
     );
@@ -116,27 +115,20 @@ export default function BankForm({
     <div className="form-card bank-theme">
       <div className="form-header">
         <div className="flex items-center gap-2">
-          <div className="badge-icon bank">
-            <Building2 size={18} />
-          </div>
-          <div>
-            <h2 className="form-title text-cyan-300">Bank System Ledger</h2>
-            <p className="form-subtitle">Add, edit, or replace bank records</p>
-          </div>
+          <Building2 size={18} className="text-cyan-400" />
+          <h2 className="form-title text-cyan-300">Bank Transactions</h2>
         </div>
 
-        <div className="flex items-center gap-2">
-          {transactions.length > 0 && (
-            <button
-              type="button"
-              onClick={onClearAll}
-              className="btn-xs-danger"
-              title="Clear all bank transactions"
-            >
-              Clear ({transactions.length})
-            </button>
-          )}
-        </div>
+        {transactions.length > 0 && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="btn-xs-danger"
+            title="Clear all bank transactions"
+          >
+            Clear ({transactions.length})
+          </button>
+        )}
       </div>
 
       {errorMsg && (
@@ -153,19 +145,19 @@ export default function BankForm({
             type="text"
             value={txnId}
             onChange={(e) => setTxnId(e.target.value)}
-            placeholder="e.g. T101"
+            placeholder="T101"
             className="form-input font-mono uppercase"
           />
         </div>
 
         <div className="input-group">
-          <label className="input-label">Amount ($)</label>
+          <label className="input-label">Amount</label>
           <input
             type="number"
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="e.g. 1000"
+            placeholder="1000"
             className="form-input font-mono"
           />
         </div>
@@ -183,20 +175,15 @@ export default function BankForm({
         <div className="input-group justify-end">
           <button type="submit" className="btn-bank-add">
             <Plus size={16} />
-            <span>Add Bank Entry</span>
+            <span>Add</span>
           </button>
         </div>
       </form>
 
-      {/* Transaction List with Edit Support */}
+      {/* Transaction List */}
       <div className="transactions-list-container">
-        <div className="list-header">
-          <span>Entered Bank Records ({transactions.length})</span>
-          <span className="text-slate-400 text-[11px]">Actions: Edit / Delete</span>
-        </div>
-
         {transactions.length === 0 ? (
-          <div className="empty-state">No bank transactions added yet. Use form above or click "Load Test Sample".</div>
+          <div className="empty-state">No bank transactions added.</div>
         ) : (
           <div className="table-wrapper">
             <table className="mini-table">
@@ -243,14 +230,12 @@ export default function BankForm({
                           <button
                             onClick={() => handleSaveEdit(item.id)}
                             className="btn-xs-secondary bg-emerald-950 text-emerald-300 border-emerald-800 mr-1"
-                            title="Save changes"
                           >
                             <Check size={12} />
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
                             className="btn-xs-secondary bg-slate-800 text-slate-400"
-                            title="Cancel editing"
                           >
                             <X size={12} />
                           </button>
@@ -270,7 +255,7 @@ export default function BankForm({
                         <button
                           onClick={() => handleStartEdit(item)}
                           className="btn-xs-secondary mr-1"
-                          title="Edit transaction details"
+                          title="Edit transaction"
                         >
                           <Edit2 size={12} />
                         </button>
