@@ -7,6 +7,7 @@
 ## 🚀 Key Features
 
 - **Dual Ledger Input Managers:** Independent form interfaces for Bank and Merchant records (`Txn ID`, `Amount`, `Date`).
+- **Inline Transaction Editing:** Edit any transaction details directly in the table with duplicate ID collision protection.
 - **Bulk CSV / Text Importer:** Paste multi-line CSV datasets or use the built-in preset test sample.
 - **$\mathcal{O}(N)$ Hash-Map Reconciliation Engine:** Compares ledger records in linear time without nested loops.
 - **Next.js Server API Route:** Exposes `POST /api/reconcile` returning structured JSON summaries and itemized breakdowns.
@@ -139,6 +140,41 @@ Where $N = N_{\text{bank}} + N_{\text{merchant}}$:
 
 ---
 
+## 💡 Interview Architecture Q&A & Production Scaling Roadmap
+
+### Q: Where is transaction data stored currently?
+**A:** Currently, transaction entries are stored **in-memory** within React client state (`page.tsx`) and Node.js server memory (`route.ts`), pre-initialized with the prompt's sample dataset (`sampleData.ts`). This provides a fast, zero-config environment for demonstration and immediate testing.
+
+### Q: How would you scale this to a production-grade enterprise application?
+1. **Persistent Database Layer (PostgreSQL + Prisma ORM):**
+   - Replace in-memory arrays with persistent database tables (`BankTransaction` and `MerchantTransaction`) backed by PostgreSQL and Prisma ORM.
+   - Add database indexes on `txnId` columns for $\mathcal{O}(\log N)$ lookups and unique constraint enforcement.
+
+2. **RESTful Granular API Endpoints:**
+   - Expand backend route handlers into explicit RESTful resource endpoints:
+     - `POST /api/bank` & `PATCH /api/bank/:txnId`
+     - `POST /api/merchant` & `PATCH /api/merchant/:txnId`
+     - `GET /api/reconciliation`
+
+3. **Database-Side SQL Join Optimization:**
+   - For enterprise-scale datasets (millions of records), perform reconciliation directly inside PostgreSQL using an indexed `FULL OUTER JOIN` query instead of pulling records into application memory:
+     ```sql
+     SELECT 
+       COALESCE(b.txn_id, m.txn_id) AS txn_id,
+       CASE
+         WHEN b.txn_id IS NULL THEN 'ONLY_IN_MERCHANT'
+         WHEN m.txn_id IS NULL THEN 'ONLY_IN_BANK'
+         WHEN b.amount = m.amount AND b.date = m.date THEN 'MATCHED'
+         WHEN b.amount != m.amount AND b.date = m.date THEN 'AMOUNT_MISMATCH'
+         WHEN b.amount = m.amount AND b.date != m.date THEN 'DATE_MISMATCH'
+         ELSE 'AMOUNT_AND_DATE_MISMATCH'
+       END AS status
+     FROM bank_txns b 
+     FULL OUTER JOIN merchant_txns m ON b.txn_id = m.txn_id;
+     ```
+
+---
+
 ## 💬 Verbal Follow-up: Scaling to 10 Million Records
 
 If both systems contain **10 million records** (~1 GB per CSV file), holding all objects in standard V8 JavaScript heap memory can trigger memory crashes (`FATAL ERROR: CALL_AND_RETRY_LAST Allocation failed`). The architecture adapts using the following strategies:
@@ -154,21 +190,7 @@ If both systems contain **10 million records** (~1 GB per CSV file), holding all
 
 ### 3. Vectorized SQL Engine (DuckDB / PostgreSQL `FULL OUTER JOIN`)
 - Load datasets into **DuckDB** or PostgreSQL with an index on `txn_id`.
-- Execute a single vectorized SQL query:
-```sql
-SELECT 
-  COALESCE(b.txn_id, m.txn_id) AS txn_id,
-  CASE
-    WHEN b.txn_id IS NULL THEN 'ONLY_IN_MERCHANT'
-    WHEN m.txn_id IS NULL THEN 'ONLY_IN_BANK'
-    WHEN b.amount = m.amount AND b.date = m.date THEN 'MATCHED'
-    WHEN b.amount != m.amount AND b.date = m.date THEN 'AMOUNT_MISMATCH'
-    WHEN b.amount = m.amount AND b.date != m.date THEN 'DATE_MISMATCH'
-    ELSE 'AMOUNT_AND_DATE_MISMATCH'
-  END AS status
-FROM bank_txns b 
-FULL OUTER JOIN merchant_txns m ON b.txn_id = m.txn_id;
-```
+- Execute vectorized SQL join query.
 
 ### 4. Distributed Processing (Apache Spark / Ray Cluster)
 - Partition records across worker nodes by `hash(txn_id) % N_workers`.
