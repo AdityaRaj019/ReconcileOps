@@ -17,31 +17,25 @@ export default function ReconcileDashboard() {
   const [reconciliationResult, setReconciliationResult] = useState<ReconciliationResponse | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('ALL');
   const [isLoading, setIsLoading] = useState(false);
-  const [useBackendApi, setUseBackendApi] = useState(true);
 
   // Reconciliation ONLY runs when the user explicitly clicks the "Run Reconciliation" button
   const handleRunReconciliation = async () => {
     setIsLoading(true);
     try {
-      if (useBackendApi) {
-        // Send POST request to backend Next.js API route /api/reconcile
-        const res = await fetch('/api/reconcile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'RECONCILE',
-            bankTransactions: bankTxns,
-            merchantTransactions: merchantTxns,
-          }),
-        });
+      // Send POST request to backend Next.js API route /api/reconcile
+      const res = await fetch('/api/reconcile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'RECONCILE',
+          bankTransactions: bankTxns,
+          merchantTransactions: merchantTxns,
+        }),
+      });
 
-        if (res.ok) {
-          const data: ReconciliationResponse = await res.json();
-          setReconciliationResult(data);
-        } else {
-          const clientData = runReconciliationEngine(bankTxns, merchantTxns);
-          setReconciliationResult(clientData);
-        }
+      if (res.ok) {
+        const data: ReconciliationResponse = await res.json();
+        setReconciliationResult(data);
       } else {
         const clientData = runReconciliationEngine(bankTxns, merchantTxns);
         setReconciliationResult(clientData);
@@ -137,22 +131,10 @@ export default function ReconcileDashboard() {
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-mono text-slate-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useBackendApi}
-              onChange={(e) => setUseBackendApi(e.target.checked)}
-              className="accent-cyan-400"
-            />
-            <span>Use Backend API</span>
-          </label>
-
-          <button onClick={handleRunReconciliation} disabled={isLoading} className="reconcile-btn-large">
-            <Play size={16} />
-            <span>{isLoading ? 'Running...' : 'Run Reconciliation'}</span>
-          </button>
-        </div>
+        <button onClick={handleRunReconciliation} disabled={isLoading} className="reconcile-btn-large">
+          <Play size={16} />
+          <span>{isLoading ? 'Running...' : 'Run Reconciliation'}</span>
+        </button>
       </div>
 
       {/* Results View */}
